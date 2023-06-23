@@ -1,36 +1,53 @@
 import requests
 from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
+import csv
 
-url = 'https://en.wikipedia.org/wiki/List_of_UFC_champions'
-page = requests.get(url)
-soup = BeautifulSoup(page.content, 'lxml')
+ht = requests.get('https://www.bitcoin.com/satoshi-archive/whitepaper/').text #Getting HTML of the Bitcoin Whitepaper on bitcoin.com
+soup = BeautifulSoup(ht, 'lxml') 
 
-table = soup.find('table', attrs={'class': 'wikitable'})
+#The main contents of the whitepaper is directly wrapped by this div tag
+main_content = soup.find('div', id = 'main-content', class_= 'main-content', role = 'main') 
 
-rows = table.find_all('tr')[2:]  # Skip the header row
+headings = main_content.find_all('h3') 
+heading_list = []
 
-weight_classes = []
-title_defenses = []
-
-for row in rows:
-    cells = row.find_all('td')
-    if len(cells) > 8:  # Only process rows that have enough cells
-        weight_class = cells[1].text.strip()
-        defenses = cells[7].text.strip()
-        if weight_class and defenses.isdigit():
-            weight_classes.append(weight_class)
-            title_defenses.append(int(defenses))
-
-# Convert weight classes to integers
-unique_classes = list(set(weight_classes))
-weight_classes = [unique_classes.index(x) for x in weight_classes]
+def clean_heading(heading) -> str:
+    modified_heading = heading.text.strip()
+    
+    try:
+        cleaned_heading = modified_heading.split('. ', 1)[1]
+    except IndexError:
+        cleaned_heading = modified_heading
+    
+    return cleaned_heading
+    
 
 
-plt.figure(figsize=(10, 6))
-plt.plot(weight_classes, title_defenses)
-plt.xlabel('Weight Class')
-plt.ylabel('Title Defenses')
-plt.title('UFC Title Defenses by Weight Class')
-plt.show()
+
+for heading in headings:
+    cleaned_heading = clean_heading(heading)
+    heading_list.append(cleaned_heading)
+    
+    
+    
+with open('categories.csv', 'w') as category_file:
+    category_writer = csv.writer(category_file, delimiter='\t')
+    category_writer.writerow(['Category Title', 'Character Count of Title'])
+    
+    for heading in heading_list:
+        category_writer.writerow([heading, str(len(heading))])
+        
+    
+        
+
+
+
+
+
+
+
+
+
+
 
